@@ -1,0 +1,5 @@
+*.qlf
+*.tmp
+.DS_Store
+.vscode/
+.idea/

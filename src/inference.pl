@@ -30,6 +30,27 @@ all_recommendations(Sorted) :-
     ),
     predsort(compare_recommendations, Recommendations, Sorted).
 
+% Compute recommendation only for a given destination using current answers.
+recommendation_for_destination(Destination, Score, Reasons) :-
+    destination(Destination),
+    findall(Points-Reason, preference_point(Destination, Points, Reason), Matches),
+    Matches \= [],
+    sum_points(Matches, Score),
+    extract_reasons(Matches, Reasons).
+
+% Compute recommendations only for an explicit list of destinations.
+recommendations_for_destinations(DestList, Sorted) :-
+    findall(
+        Score-Destination-Reasons,
+        (
+            member(Destination, DestList),
+            recommendation_for_destination(Destination, Score, Reasons)
+        ),
+        Recommendations
+    ),
+    Recommendations \= [],
+    predsort(compare_recommendations, Recommendations, Sorted).
+
 compare_recommendations(Order, Score1-_-_, Score2-_-_) :-
     (
         Score1 > Score2 -> Order = <

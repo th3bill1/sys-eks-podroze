@@ -11,6 +11,9 @@
 main :-
     start_consultation,
     show_recommendations,
+    show_reducts,
+    show_reduct_recommendations,
+    show_reducts_tolerant_aggressive,
     show_used_attributes,
     nl,
     write('Koniec konsultacji.'), nl.

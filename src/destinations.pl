@@ -12,6 +12,9 @@ destination(wieden).
 destination(budapeszt).
 destination(madeira).
 destination(oslo).
+destination(santorini).
+destination(krakow).
+destination(split).
 
 % Kraj
 
@@ -25,6 +28,9 @@ country(wieden, austria).
 country(budapeszt, wegry).
 country(madeira, portugalia).
 country(oslo, norwegia).
+country(santorini, grecja).
+country(krakow, polska).
+country(split, chorwacja).
 
 % Cechy ogólne
 
@@ -79,6 +85,21 @@ feature(oslo, bezpieczny).
 feature(oslo, dobra_komunikacja).
 feature(oslo, chlodny_klimat).
 
+feature(santorini, ma_plaze).
+feature(santorini, romantyczny).
+feature(santorini, wysoka_temperatura_latem).
+feature(santorini, dobra_komunikacja).
+
+feature(krakow, ma_zabytki).
+feature(krakow, kultura).
+feature(krakow, dobry_na_weekend).
+feature(krakow, tani).
+
+feature(split, ma_plaze).
+feature(split, aktywny_wypoczynek).
+feature(split, wysoka_temperatura_latem).
+feature(split, dobra_komunikacja).
+
 % Koszt
 
 cost(barcelona, sredni).
@@ -91,6 +112,9 @@ cost(wieden, wysoki).
 cost(budapeszt, niski).
 cost(madeira, sredni).
 cost(oslo, wysoki).
+cost(santorini, wysoki).
+cost(krakow, niski).
+cost(split, sredni).
 
 % Klimat
 
@@ -104,6 +128,9 @@ climate(wieden, umiarkowany).
 climate(budapeszt, umiarkowany).
 climate(madeira, cieply).
 climate(oslo, chlodny).
+climate(santorini, cieply).
+climate(krakow, umiarkowany).
+climate(split, cieply).
 
 % Długość wyjazdu
 
@@ -136,6 +163,16 @@ good_length(madeira, dlugi_pobyt).
 
 good_length(oslo, kilka_dni).
 
+good_length(santorini, weekend).
+good_length(santorini, kilka_dni).
+good_length(santorini, tydzien).
+
+good_length(krakow, weekend).
+good_length(krakow, kilka_dni).
+
+good_length(split, tydzien).
+good_length(split, kilka_dni).
+
 % Transport
 
 transport_ok(barcelona, samolot).
@@ -153,6 +190,14 @@ transport_ok(budapeszt, pociag).
 transport_ok(budapeszt, samochod).
 transport_ok(madeira, samolot).
 transport_ok(oslo, samolot).
+
+transport_ok(santorini, samolot).
+
+transport_ok(krakow, pociag).
+transport_ok(krakow, samochod).
+
+transport_ok(split, samolot).
+transport_ok(split, pociag).
 
 % Towarzystwo
 
@@ -188,6 +233,16 @@ good_for(madeira, znajomi).
 good_for(oslo, solo).
 good_for(oslo, para).
 
+good_for(santorini, para).
+good_for(santorini, solo).
+
+good_for(krakow, znajomi).
+good_for(krakow, para).
+good_for(krakow, solo).
+
+good_for(split, znajomi).
+good_for(split, para).
+
 % Aktywność
 
 activity_level(barcelona, sredni).
@@ -200,3 +255,6 @@ activity_level(wieden, niski).
 activity_level(budapeszt, sredni).
 activity_level(madeira, wysoki).
 activity_level(oslo, sredni).
+activity_level(santorini, sredni).
+activity_level(krakow, niski).
+activity_level(split, wysoki).

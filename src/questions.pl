@@ -2,6 +2,8 @@
 % Pytania do użytkownika
 % =========================
 
+:- use_module(library(readutil)).
+
 :- dynamic answer/2.
 
 question(
@@ -13,13 +15,13 @@ question(
 question(
     budzet,
     'Jaki masz budzet?',
-    [niski, sredni, wysoki]
+    [bardzo_niski, niski, sredni, wysoki, bardzo_wysoki]
 ).
 
 question(
     klimat,
     'Jaki klimat preferujesz?',
-    [cieply, umiarkowany, chlodny]
+    [bardzo_cieply, cieply, umiarkowany, chlodny, bardzo_chlodny]
 ).
 
 question(
@@ -31,7 +33,7 @@ question(
 question(
     dlugosc_wyjazdu,
     'Jak dlugi ma byc wyjazd?',
-    [weekend, kilka_dni, tydzien, dlugi_pobyt]
+    [krotki, weekend, kilka_dni, tydzien, dlugi_pobyt]
 ).
 
 question(
@@ -43,7 +45,7 @@ question(
 question(
     poziom_aktywnosci,
     'Jaki poziom aktywnosci preferujesz?',
-    [niski, sredni, wysoki]
+    [bardzo_niski, niski, sredni, wysoki, bardzo_wysoki]
 ).
 
 start_consultation :-
@@ -51,6 +53,7 @@ start_consultation :-
     nl,
     write('=== System ekspertowy wyboru destynacji podrozniczej ==='), nl,
     write('Odpowiadaj wpisujac jedna z dostepnych opcji.'), nl,
+    write('Budzet, klimat, dlugosc wyjazdu i aktywnosc maja teraz opcje rozmyte.'), nl,
     nl,
     ask_all_questions.
 

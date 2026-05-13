@@ -8,19 +8,6 @@ System ekspertowy w Prologu wspomagający wybór destynacji podróżniczej na po
 swipl -q -s src/main.pl
 ```
 
-## Zmiany
-
-- Pytania o budzet, klimat, dlugosc wyjazdu i poziom aktywnosci uzywaja teraz wartosci rozmytych.
-- System pokazuje rowniez redukty, czyli minimalne zbiory odpowiedzi zachowujace najlepsza rekomendacje.
-
-## Redukty i Logika Rozmyta
-
-System implementuje:
-
-1. **Pełną kalkulację bez przybliżenia** (`show_recommendations`) — ocena wszystkich 10 miast na podstawie dokładnych tablic podobieństwa rozmytego.
-2. **Redukty dokładne** (`show_reducts`) — minimalne zbiory atrybutów zachowujące tę samą najlepszą rekomendację i dokładnie taki sam wynik.
-3. **Redukty agresywne** (`show_reducts_tolerant_aggressive`) — minimalne zbiory atrybutów, dla których najlepsze miasto może spaść maksymalnie o 25 punktów. Pokazuje "co najmniej niezbędne atrybuty" dla praktycznego wnioskowania.
-
 ## Przykłady
 
 Poniżej scenariusze wraz z uruchomieniami bezpośrednio z terminala (bez interaktywnych pytań).

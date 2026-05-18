@@ -1,0 +1,723 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{longtable}
+\usepackage{multirow}
+
+\definecolor{prologbg}{RGB}{245,245,245}
+\definecolor{prologkw}{RGB}{0,0,180}
+\definecolor{prologcomment}{RGB}{0,128,0}
+\definecolor{prologstring}{RGB}{163,21,21}
+
+\lstdefinestyle{prolog}{
+    language=Prolog,
+    backgroundcolor=\color{prologbg},
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{prologkw}\bfseries,
+    commentstyle=\color{prologcomment}\itshape,
+    stringstyle=\color{prologstring},
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    tabsize=4,
+    showstringspaces=false,
+    captionpos=b,
+    morekeywords={findall,forall,predsort,retractall,assertz,member,once,setup_call_cleanup,write,nl,read_line_to_string,atom_string,string_lower,normalize_space,ensure_loaded,use_module,dynamic,begin_tests,end_tests}
+}
+
+\newcommand{\projecttitle}{Podróżniczy System Ekspertowy -- Dokumentacja Techniczna}
+\newcommand{\authorone}{Aleksandra Wieczorek}
+\newcommand{\authortwo}{Wojciech Wójcik}
+\newcommand{\projectdate}{Warszawa, 2026}
+
+\setcounter{tocdepth}{2}
+
+\begin{document}
+\sloppy
+
+\begin{titlepage}
+    \centering
+
+    \includegraphics[width=0.8\textwidth]{politechnika.png}\par
+    \vspace{2.5cm}
+
+    {\Large Dokumentacja techniczna projektu z~przedmiotu Systemy Ekspertowe\par}
+    \vspace{1.2cm}
+
+    {\Huge \bfseries \projecttitle \par}
+    \vspace{2cm}
+
+    {\Large Autorzy:\par}
+    \vspace{0.5cm}
+    {\large \authorone\par}
+    \vspace{0.3cm}
+    {\large \authortwo\par}
+
+    \vfill
+
+    {\large \projectdate\par}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Wprowadzenie}
+
+Niniejszy dokument stanowi dokumentację techniczną systemu ekspertowego wspomagającego wybór destynacji podróżniczej. System został zaimplementowany w~języku Prolog (SWI-Prolog) i~łączy w~sobie trzy techniki sztucznej inteligencji: klasyczne wnioskowanie regułowe, logikę rozmytą (fuzzy logic) oraz teorię zbiorów przybliżonych (rough sets) w~postaci algorytmu wyznaczania minimalnych reduktów.
+
+System prowadzi interaktywną konsultację z~użytkownikiem, zbiera informacje o~preferencjach podróżniczych, a~następnie generuje ranking destynacji wraz z~uzasadnieniem rekomendacji oraz analizą minimalnych zbiorów atrybutów potrzebnych do podjęcia decyzji.
+
+\subsection{Uruchomienie systemu}
+
+System wymaga zainstalowanego środowiska SWI-Prolog. Uruchomienie odbywa się poleceniem:
+
+\begin{lstlisting}[style=prolog, numbers=none]
+swipl -q -s src/main.pl
+\end{lstlisting}
+
+Po załadowaniu modułów należy wywołać predykat \texttt{main.} w~konsoli Prologa. System zada użytkownikowi siedem pytań, a~następnie wyświetli wyniki.
+
+Uruchomienie testów jednostkowych:
+
+\begin{lstlisting}[style=prolog, numbers=none]
+swipl -g "load_test_files([]), run_tests." -t halt tests/test_inference.pl
+\end{lstlisting}
+
+\section{Architektura systemu}
+
+System posiada budowę modułową. Każdy moduł jest osobnym plikiem Prologa odpowiedzialnym za wyodrębniony obszar funkcjonalności. Główny plik \texttt{main.pl} ładuje wszystkie moduły i~definiuje przebieg konsultacji.
+
+\subsection{Struktura katalogów}
+
+\begin{verbatim}
+sys-eks-podroze/
+  src/
+    main.pl           -- punkt wejścia, ładowanie modułów
+    questions.pl      -- interfejs użytkownika, pytania
+    destinations.pl   -- baza wiedzy o destynacjach
+    rules.pl          -- reguły eksperckie z logiką rozmytą
+    inference.pl      -- mechanizm wnioskowania i scoringu
+    reducts.pl        -- algorytm minimalnych reduktów
+  tests/
+    test_inference.pl -- testy jednostkowe
+  README.md           -- instrukcja uruchomienia
+\end{verbatim}
+
+\subsection{Diagram modułów}
+
+Zależności między modułami przedstawiają się następująco:
+
+\begin{verbatim}
+  main.pl
+    |--- destinations.pl   (baza faktów)
+    |--- questions.pl       (interfejs użytkownika)
+    |--- rules.pl           (reguły eksperckie)
+    |       |--- korzysta z: destinations.pl, questions.pl
+    |--- inference.pl       (mechanizm wnioskowania)
+    |       |--- korzysta z: rules.pl, destinations.pl
+    |--- reducts.pl         (redukty)
+            |--- korzysta z: inference.pl, questions.pl
+\end{verbatim}
+
+\subsection{Przebieg konsultacji}
+
+Predykat \texttt{main} wykonuje następujące kroki:
+
+\begin{enumerate}
+    \item \texttt{start\_consultation} -- czyszczenie poprzednich odpowiedzi, wyświetlenie informacji, zadanie 7~pytań.
+    \item \texttt{show\_recommendations} -- obliczenie i~wyświetlenie rankingu destynacji.
+    \item \texttt{show\_reducts} -- wyznaczenie i~wyświetlenie minimalnych reduktów (ścisłych).
+    \item \texttt{show\_reduct\_recommendations} -- wyświetlenie rekomendacji przy użyciu każdego reduktu.
+    \item \texttt{show\_reducts\_tolerant\_aggressive} -- redukty tolerancyjne (spadek do 25 pkt).
+    \item \texttt{show\_used\_attributes} -- lista użytych atrybutów.
+\end{enumerate}
+
+\section{Baza wiedzy -- moduł \texttt{destinations.pl}}
+
+Baza wiedzy zawiera fakty opisujące 13~destynacji podróżniczych oraz ich właściwości. Wiedza jest zorganizowana w~kilku kategoriach predykatów.
+
+\subsection{Lista destynacji}
+
+System zawiera następujące destynacje:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Destynacja} & \textbf{Kraj} \\
+\midrule
+Barcelona & Hiszpania \\
+Paryż & Francja \\
+Rzym & Włochy \\
+Zakopane & Polska \\
+Praga & Czechy \\
+Lizbona & Portugalia \\
+Wiedeń & Austria \\
+Budapeszt & Węgry \\
+Madeira & Portugalia \\
+Oslo & Norwegia \\
+Santorini & Grecja \\
+Kraków & Polska \\
+Split & Chorwacja \\
+\bottomrule
+\end{tabular}
+\caption{Destynacje w~bazie wiedzy}
+\end{table}
+
+\subsection{Kategorie atrybutów destynacji}
+
+Każda destynacja jest opisana za pomocą następujących predykatów:
+
+\begin{itemize}
+    \item \texttt{destination(D)} -- deklaracja destynacji,
+    \item \texttt{country(D, Kraj)} -- kraj, w~którym znajduje się destynacja,
+    \item \texttt{feature(D, Cecha)} -- cechy binarne (np. \texttt{ma\_plaze}, \texttt{ma\_zabytki}, \texttt{dobra\_komunikacja}, \texttt{wysoka\_temperatura\_latem}, \texttt{kultura}, \texttt{natura}, \texttt{aktywny\_wypoczynek}, \texttt{bezpieczny}, \texttt{tani}, \texttt{dobry\_na\_weekend}, \texttt{odpowiedni\_dla\_rodzin}, \texttt{romantyczny}, \texttt{rozrywka}, \texttt{chlodny\_klimat}),
+    \item \texttt{cost(D, Koszt)} -- poziom kosztów: \texttt{niski}, \texttt{sredni}, \texttt{wysoki},
+    \item \texttt{climate(D, Klimat)} -- klimat: \texttt{cieply}, \texttt{umiarkowany}, \texttt{chlodny},
+    \item \texttt{good\_length(D, Dlugosc)} -- optymalna długość wyjazdu,
+    \item \texttt{transport\_ok(D, Transport)} -- dostępne środki transportu,
+    \item \texttt{good\_for(D, Towarzystwo)} -- odpowiedni typ towarzystwa,
+    \item \texttt{activity\_level(D, Poziom)} -- poziom aktywności: \texttt{niski}, \texttt{sredni}, \texttt{wysoki}.
+\end{itemize}
+
+\subsection{Przykład reprezentacji destynacji}
+
+\begin{lstlisting}[style=prolog, caption={Reprezentacja Barcelony w~bazie wiedzy}]
+destination(barcelona).
+country(barcelona, hiszpania).
+
+feature(barcelona, ma_plaze).
+feature(barcelona, ma_zabytki).
+feature(barcelona, dobra_komunikacja).
+feature(barcelona, wysoka_temperatura_latem).
+feature(barcelona, rozrywka).
+
+cost(barcelona, sredni).
+climate(barcelona, cieply).
+
+good_length(barcelona, kilka_dni).
+good_length(barcelona, tydzien).
+
+transport_ok(barcelona, samolot).
+
+good_for(barcelona, znajomi).
+good_for(barcelona, para).
+
+activity_level(barcelona, sredni).
+\end{lstlisting}
+
+\section{Interfejs użytkownika -- moduł \texttt{questions.pl}}
+
+Moduł \texttt{questions.pl} odpowiada za prowadzenie dialogu z~użytkownikiem. Odpowiedzi użytkownika są przechowywane jako dynamiczne fakty \texttt{answer(Atrybut, Wartość)}.
+
+\subsection{Zbierane atrybuty}
+
+System zadaje użytkownikowi 7~pytań. Każde pytanie ma zdefiniowany zbiór dopuszczalnych odpowiedzi:
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Atrybut} & \textbf{Dopuszczalne wartości} \\
+\midrule
+\texttt{typ\_wypoczynku} & plażowy, miejski, górski, aktywny, kulturowy, relaksacyjny \\
+\texttt{budzet} & bardzo\_niski, niski, średni, wysoki, bardzo\_wysoki \\
+\texttt{klimat} & bardzo\_ciepły, ciepły, umiarkowany, chłodny, bardzo\_chłodny \\
+\texttt{srodek\_transportu} & samolot, samochód, pociąg, dowolny \\
+\texttt{dlugosc\_wyjazdu} & krótki, weekend, kilka\_dni, tydzień, długi\_pobyt \\
+\texttt{towarzystwo} & solo, para, rodzina, znajomi \\
+\texttt{poziom\_aktywnosci} & bardzo\_niski, niski, średni, wysoki, bardzo\_wysoki \\
+\bottomrule
+\end{tabularx}
+\caption{Atrybuty preferencji użytkownika i~ich dopuszczalne wartości}
+\end{table}
+
+\subsection{Mechanizm walidacji}
+
+Odpowiedzi użytkownika są normalizowane (konwersja do małych liter, usunięcie nadmiarowych spacji) za pomocą predykatu \texttt{normalize\_input}. Jeśli użytkownik poda niepoprawną odpowiedź, system wyświetla komunikat o~błędzie i~ponawia pytanie.
+
+\begin{lstlisting}[style=prolog, caption={Normalizacja odpowiedzi użytkownika}]
+normalize_input(Input, Atom) :-
+    string_lower(Input, Lower),
+    normalize_space(string(Clean), Lower),
+    atom_string(Atom, Clean).
+\end{lstlisting}
+
+\section{Reguły eksperckie i~logika rozmyta -- moduł \texttt{rules.pl}}
+
+Moduł \texttt{rules.pl} stanowi serce wiedzy eksperckiej systemu. Reguły łączą preferencje użytkownika z~właściwościami destynacji, wykorzystując logikę rozmytą do obsługi nieostrych pojęć.
+
+\subsection{Struktura reguł}
+
+Wszystkie reguły eksperckie mają postać predykatu:
+
+\begin{lstlisting}[style=prolog, numbers=none]
+preference_point(Destynacja, Punkty, Powod).
+\end{lstlisting}
+
+Każda reguła, która jest spełniona dla danej destynacji, przyznaje określoną liczbę punktów wraz z~tekstowym uzasadnieniem. Punkty ze wszystkich spełnionych reguł są sumowane przez mechanizm wnioskowania.
+
+\subsection{Logika rozmyta -- funkcje podobieństwa}
+
+System wykorzystuje \textbf{funkcje podobieństwa} (similarity functions), które przypisują stopień przynależności $\mu \in [0, 1]$ do każdego dopasowania między preferencją użytkownika a~cechą destynacji. Obliczenie punktów rozmytych realizowane jest wzorem:
+
+\begin{equation}
+\text{Points} = \text{round}(\text{MaxPoints} \times \mu)
+\end{equation}
+
+gdzie $\mu$ to stopień podobieństwa, a~$\text{MaxPoints}$ to maksymalna liczba punktów za daną kategorię.
+
+\begin{lstlisting}[style=prolog, caption={Funkcja obliczania punktów rozmytych}]
+fuzzy_points(MaxPoints, Degree, Points) :-
+    PointsFloat is MaxPoints * Degree,
+    Points is round(PointsFloat).
+\end{lstlisting}
+
+W~systemie zdefiniowano 5~funkcji podobieństwa:
+
+\subsubsection{Podobieństwo typu wypoczynku (\texttt{type\_similarity})}
+
+Mapuje preferencje wypoczynku na cechy destynacji. Stopień przynależności zależy od tego, jak dobrze destynacja pasuje do wybranego typu:
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{llc}
+\toprule
+\textbf{Preferencja} & \textbf{Warunek} & $\mu$ \\
+\midrule
+plażowy & destynacja ma plaże & 1.0 \\
+plażowy & wysoka temp., brak plaży & 0.7 \\
+miejski & komunikacja + zabytki & 1.0 \\
+miejski & tylko komunikacja lub zabytki & 0.7 \\
+górski & destynacja ma góry & 1.0 \\
+górski & natura, brak gór & 0.7 \\
+aktywny & aktywny wypoczynek & 1.0 \\
+aktywny & góry, brak aktywnego wyp. & 0.7 \\
+aktywny & natura (brak gór i~aktywnego) & 0.5 \\
+kulturowy & destynacja ma kulturę & 1.0 \\
+kulturowy & zabytki, brak kultury & 0.8 \\
+relaksacyjny & plaże lub natura & 1.0 \\
+relaksacyjny & bezpieczny (brak plaży/natury) & 0.7 \\
+\bottomrule
+\end{tabular}
+\caption{Stopnie przynależności dla typu wypoczynku (maks.\ 20 pkt)}
+\end{table}
+
+\subsubsection{Podobieństwo budżetu (\texttt{budget\_similarity})}
+
+Macierz podobieństwa między preferowanym budżetem użytkownika a~kosztem destynacji:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{l|ccc}
+\toprule
+\textbf{Preferencja / Koszt} & \textbf{niski} & \textbf{średni} & \textbf{wysoki} \\
+\midrule
+bardzo\_niski & 1.0 & 0.6 & 0.1 \\
+niski & 1.0 & 0.75 & 0.2 \\
+średni & 0.4 & 1.0 & 0.45 \\
+wysoki & 0.1 & 0.65 & 1.0 \\
+bardzo\_wysoki & -- & 0.4 & 1.0 \\
+\bottomrule
+\end{tabular}
+\caption{Macierz podobieństwa budżetu (maks.\ 15 pkt)}
+\end{table}
+
+\subsubsection{Podobieństwo klimatu (\texttt{climate\_similarity})}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{l|ccc}
+\toprule
+\textbf{Preferencja / Klimat} & \textbf{ciepły} & \textbf{umiarkowany} & \textbf{chłodny} \\
+\midrule
+bardzo\_ciepły & 1.0 & 0.6 & 0.1 \\
+ciepły & 1.0 & 0.7 & 0.2 \\
+umiarkowany & 0.6 & 1.0 & 0.6 \\
+chłodny & 0.1 & 0.7 & 1.0 \\
+bardzo\_chłodny & 0.1 & 0.5 & 1.0 \\
+\bottomrule
+\end{tabular}
+\caption{Macierz podobieństwa klimatu (maks.\ 15 pkt)}
+\end{table}
+
+\subsubsection{Podobieństwo długości wyjazdu (\texttt{length\_similarity})}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{l|cccc}
+\toprule
+\textbf{Pref. / Długość} & \textbf{weekend} & \textbf{kilka\_dni} & \textbf{tydzień} & \textbf{długi\_pobyt} \\
+\midrule
+krótki & 1.0 & 0.6 & 0.1 & -- \\
+weekend & 1.0 & 0.8 & 0.2 & -- \\
+kilka\_dni & 0.7 & 1.0 & 0.7 & -- \\
+tydzień & -- & 0.6 & 1.0 & 0.7 \\
+długi\_pobyt & -- & -- & 0.6 & 1.0 \\
+\bottomrule
+\end{tabular}
+\caption{Macierz podobieństwa długości wyjazdu (maks.\ 15 pkt)}
+\end{table}
+
+\subsubsection{Podobieństwo poziomu aktywności (\texttt{activity\_similarity})}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{l|ccc}
+\toprule
+\textbf{Preferencja / Poziom} & \textbf{niski} & \textbf{średni} & \textbf{wysoki} \\
+\midrule
+bardzo\_niski & 1.0 & 0.5 & 0.1 \\
+niski & 1.0 & 0.75 & 0.2 \\
+średni & 0.4 & 1.0 & 0.5 \\
+wysoki & 0.1 & 0.6 & 1.0 \\
+bardzo\_wysoki & -- & 0.4 & 1.0 \\
+\bottomrule
+\end{tabular}
+\caption{Macierz podobieństwa poziomu aktywności (maks.\ 10 pkt)}
+\end{table}
+
+\subsection{Rozkład punktów w~regułach}
+
+Reguły przyznają punkty w~następujących kategoriach:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Kategoria reguły} & \textbf{Maks.\ punkty} & \textbf{Typ} \\
+\midrule
+Typ wypoczynku & 20 & rozmyta \\
+Budżet & 15 & rozmyta \\
+Klimat & 15 & rozmyta \\
+Długość wyjazdu & 15 & rozmyta \\
+Transport & 10 & binarna \\
+Towarzystwo & 10 & binarna \\
+Poziom aktywności & 10 & rozmyta \\
+\midrule
+\textit{Reguły specjalistyczne (każda)} & \textit{10} & \textit{binarna} \\
+\bottomrule
+\end{tabular}
+\caption{Maksymalna liczba punktów w~poszczególnych kategoriach reguł}
+\end{table}
+
+\subsection{Reguły specjalistyczne}
+
+Oprócz reguł opartych na funkcjach podobieństwa system zawiera 5~reguł specjalistycznych, które przyznają dodatkowe punkty bonusowe (po 10 pkt) w~szczególnych sytuacjach:
+
+\begin{enumerate}
+    \item \textbf{Tani wyjazd} -- jeśli użytkownik preferuje niski budżet i~destynacja ma cechę \texttt{tani}.
+    \item \textbf{Weekend} -- jeśli użytkownik planuje wyjazd weekendowy i~destynacja ma cechę \texttt{dobry\_na\_weekend}.
+    \item \textbf{Rodzina} -- jeśli użytkownik podróżuje z~rodziną i~destynacja jest \texttt{odpowiedni\_dla\_rodzin}.
+    \item \textbf{Podróż solo} -- jeśli użytkownik podróżuje sam i~destynacja jest \texttt{bezpieczny}.
+    \item \textbf{Ciepła pogoda} -- jeśli użytkownik preferuje ciepły klimat i~destynacja ma \texttt{wysoka\_temperatura\_latem}.
+\end{enumerate}
+
+\begin{lstlisting}[style=prolog, caption={Przykłady reguł specjalistycznych}]
+preference_point(D, 10, 'dobra opcja dla taniego wyjazdu') :-
+    answer(budzet, niski),
+    feature(D, tani).
+
+preference_point(D, 10, 'dobra opcja na weekend') :-
+    answer(dlugosc_wyjazdu, weekend),
+    feature(D, dobry_na_weekend).
+
+preference_point(D, 10, 'bezpieczna opcja dla podrozy solo') :-
+    answer(towarzystwo, solo),
+    feature(D, bezpieczny).
+\end{lstlisting}
+
+\section{Mechanizm wnioskowania -- moduł \texttt{inference.pl}}
+
+Moduł \texttt{inference.pl} implementuje silnik inferencyjny systemu, który agreguje wyniki z~reguł eksperckich i~generuje ranking destynacji.
+
+\subsection{Algorytm wnioskowania}
+
+Dla każdej destynacji $D$ w~bazie wiedzy system wykonuje następujące kroki:
+
+\begin{enumerate}
+    \item Za pomocą \texttt{findall} zbiera wszystkie pary $(\text{Punkty}, \text{Powód})$ z~reguł \texttt{preference\_point(D, Punkty, Powód)}, które są spełnione przy aktualnych odpowiedziach użytkownika.
+    \item Sumuje punkty ze wszystkich spełnionych reguł: $\text{Score}(D) = \sum_{i} \text{Points}_i$.
+    \item Ekstrahuje listę powodów (uzasadnień) z~dopasowanych reguł.
+    \item Sortuje destynacje malejąco według wyniku.
+\end{enumerate}
+
+\begin{lstlisting}[style=prolog, caption={Główny predykat rekomendacji}]
+recommendation(Destination, Score, Reasons) :-
+    destination(Destination),
+    findall(
+        Points-Reason,
+        preference_point(Destination, Points, Reason),
+        Matches
+    ),
+    Matches \= [],
+    sum_points(Matches, Score),
+    extract_reasons(Matches, Reasons).
+
+all_recommendations(Sorted) :-
+    findall(
+        Score-Destination-Reasons,
+        recommendation(Destination, Score, Reasons),
+        Recommendations
+    ),
+    predsort(compare_recommendations, Recommendations, Sorted).
+\end{lstlisting}
+
+\subsection{Sortowanie wyników}
+
+Destynacje są sortowane za pomocą \texttt{predsort} z~dedykowanym komparatorem, który porównuje wyniki malejąco (destynacja z~najwyższym wynikiem jest pierwsza):
+
+\begin{lstlisting}[style=prolog, caption={Komparator do sortowania rekomendacji}]
+compare_recommendations(Order, Score1-_-_, Score2-_-_) :-
+    (   Score1 > Score2 -> Order = <
+    ;   Score1 < Score2 -> Order = >
+    ;   Order = =
+    ).
+\end{lstlisting}
+
+\subsection{Eksplanacja wyników}
+
+System dostarcza eksplanację (wyjaśnienie) każdej rekomendacji w~postaci listy powodów. Każdy powód to tekstowy opis reguły, która została spełniona. Dzięki temu użytkownik rozumie, dlaczego dana destynacja znalazła się na określonej pozycji w~rankingu.
+
+Przykładowy wynik:
+\begin{verbatim}
+1. barcelona - dopasowanie: 114 pkt
+   Powody:
+   - pasuje do wypoczynku plazowego
+   - pasuje do wybranego budzetu
+   - pasuje do preferowanego klimatu
+   - pasuje do dlugosci wyjazdu
+   - pasuje do preferowanego transportu
+   - pasuje do typu towarzystwa
+   - pasuje do poziomu aktywnosci
+   - ciepla destynacja z dobra pogoda latem
+\end{verbatim}
+
+\section{Redukty -- moduł \texttt{reducts.pl}}
+
+Moduł \texttt{reducts.pl} implementuje algorytm wyznaczania \textbf{minimalnych reduktów} oparty na teorii zbiorów przybliżonych (rough set theory). Redukt to minimalny podzbiór odpowiedzi użytkownika, który zachowuje tę~samą najlepszą rekomendację co pełny zbiór atrybutów.
+
+\subsection{Definicja formalna}
+
+Niech $A = \{a_1, a_2, \ldots, a_n\}$ będzie zbiorem odpowiedzi użytkownika, $R(A)$ będzie najlepszą rekomendacją przy użyciu pełnego zbioru $A$, a~$S(A)$ -- wynikiem punktowym tej rekomendacji.
+
+Podzbiór $P \subseteq A$ jest \textbf{reduktem}, jeśli:
+\begin{enumerate}
+    \item $R(P) = R(A)$ oraz $S(P) = S(A)$ (zachowanie rekomendacji i~wyniku),
+    \item $\forall P' \subset P,\; P' \neq \emptyset: R(P') \neq R(A) \lor S(P') \neq S(A)$ (minimalność -- żaden właściwy podzbiór nie spełnia warunku 1).
+\end{enumerate}
+
+\subsection{Algorytm}
+
+\begin{lstlisting}[style=prolog, caption={Wyznaczanie minimalnych reduktów}]
+minimal_reduct_for(Destination, Score, Answers, Reduct) :-
+    subset_of_answers(Reduct, Answers),
+    Reduct \= [],
+    with_answers(Reduct,
+        best_recommendation(Destination, Score, _)),
+    \+ (
+        proper_subset_of_answers(ProperSubset, Reduct),
+        ProperSubset \= [],
+        with_answers(ProperSubset,
+            best_recommendation(Destination, Score, _))
+    ).
+\end{lstlisting}
+
+Algorytm działa następująco:
+\begin{enumerate}
+    \item Generuje wszystkie niepuste podzbiory odpowiedzi użytkownika.
+    \item Dla każdego podzbioru tymczasowo zastępuje odpowiedzi użytkownika podzbiorem (predykat \texttt{with\_answers}).
+    \item Sprawdza, czy najlepsza rekomendacja jest taka sama jak przy pełnym zbiorze odpowiedzi.
+    \item Weryfikuje minimalność -- upewnia się, że żaden właściwy podzbiór danego podzbioru nie daje takiego samego wyniku.
+\end{enumerate}
+
+\subsection{Bezpieczna podmiana odpowiedzi}
+
+Predykat \texttt{with\_answers} tymczasowo podmienia odpowiedzi użytkownika w~bazie dynamicznej, wykonuje zadany cel, a~następnie przywraca oryginalne odpowiedzi. Wykorzystuje \texttt{setup\_call\_cleanup} dla bezpieczeństwa:
+
+\begin{lstlisting}[style=prolog, caption={Bezpieczna podmiana kontekstu odpowiedzi}]
+with_answers(Answers, Goal) :-
+    answered_answers(OriginalAnswers),
+    setup_call_cleanup(
+        (retractall(answer(_, _)),
+         assert_answer_terms(Answers)),
+        Goal,
+        (retractall(answer(_, _)),
+         assert_answer_terms(OriginalAnswers))
+    ).
+\end{lstlisting}
+
+\subsection{Redukty tolerancyjne}
+
+Oprócz reduktów ścisłych system oferuje \textbf{redukty tolerancyjne}, które akceptują podzbiory atrybutów nawet jeśli wynik punktowy nieznacznie spadnie. Parametr \texttt{MaxDrop} określa maksymalny dopuszczalny spadek wyniku.
+
+Podzbiór $P$ jest reduktem tolerancyjnym z~tolerancją $\delta$, jeśli:
+\begin{equation}
+R(P) = R(A) \quad \lor \quad S(P) \geq S(A) - \delta
+\end{equation}
+
+System domyślnie prezentuje redukty z~tolerancją $\delta = 25$ punktów (\texttt{show\_reducts\_tolerant\_aggressive}), co pozwala na bardziej agresywną redukcję atrybutów.
+
+\subsection{Złożoność obliczeniowa}
+
+Algorytm wymaga wygenerowania wszystkich podzbiorów zbioru odpowiedzi, co daje złożoność $O(2^n)$, gdzie $n$ to liczba atrybutów. Dla $n = 7$ (128 podzbiorów) jest to obliczeniowo wykonalne. Dla każdego podzbioru wykonywane jest wnioskowanie, co daje całkowitą złożoność:
+
+\begin{equation}
+O(2^n \cdot m \cdot r)
+\end{equation}
+
+gdzie $m$ to liczba destynacji (13), a~$r$ to liczba reguł.
+
+\section{Scenariusze użycia}
+
+Poniżej przedstawiono cztery przykładowe scenariusze konsultacji demonstrujące różne aspekty działania systemu.
+
+\subsection{Scenariusz 1: Wyjazd plażowy (para, samolot)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Atrybut} & \textbf{Wartość} \\
+\midrule
+Typ wypoczynku & plażowy \\
+Budżet & średni \\
+Klimat & ciepły \\
+Transport & samolot \\
+Długość & tydzień \\
+Towarzystwo & para \\
+Aktywność & średni \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Oczekiwany wynik:} Barcelona na pierwszym miejscu ($\sim$114 pkt) -- pełne dopasowanie plaż, klimatu, budżetu i~długości. Lizbona i~Split na dalszych pozycjach. Redukt agresywny redukuje wynik do $\sim$89 pkt przy zachowaniu rekomendacji.
+
+\subsection{Scenariusz 2: Weekend miejski (niski budżet, pociąg)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Atrybut} & \textbf{Wartość} \\
+\midrule
+Typ wypoczynku & miejski \\
+Budżet & niski \\
+Klimat & umiarkowany \\
+Transport & pociąg \\
+Długość & weekend \\
+Towarzystwo & para \\
+Aktywność & niski \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Oczekiwany wynik:} Praga na pierwszym miejscu ($\sim$127 pkt) -- tania destynacja z~zabytkami, dobra komunikacja, dostępna pociągiem. Budapeszt na drugiej pozycji ($\sim$115 pkt). Redukt pokazuje, że mniej atrybutów wystarczy do identyfikacji Pragi.
+
+\subsection{Scenariusz 3: Górski aktywny (rodzina, samochód)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Atrybut} & \textbf{Wartość} \\
+\midrule
+Typ wypoczynku & aktywny \\
+Budżet & średni \\
+Klimat & umiarkowany \\
+Transport & samochód \\
+Długość & kilka\_dni \\
+Towarzystwo & rodzina \\
+Aktywność & wysoki \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Oczekiwany wynik:} Zakopane na pierwszym miejscu ($\sim$116 pkt) -- góry, aktywny wypoczynek, odpowiednie dla rodzin, dostępne samochodem.
+
+\subsection{Scenariusz 4: Luksusowa plaża (para, minimalny zestaw atrybutów)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Atrybut} & \textbf{Wartość} \\
+\midrule
+Typ wypoczynku & plażowy \\
+Budżet & wysoki \\
+Towarzystwo & para \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Oczekiwany wynik:} Santorini ($\sim$45 pkt) -- romantyczna wyspa z~plażami, wysoki budżet dopasowany. Redukt agresywny pokazuje, że wystarczają zaledwie 3~atrybuty ($\sim$20 pkt) do wskazania tej destynacji.
+
+\section{Testy jednostkowe}
+
+System posiada zestaw testów jednostkowych zdefiniowanych w~pliku \texttt{tests/test\_inference.pl}, wykorzystujących wbudowany framework testowy SWI-Prolog.
+
+\subsection{Przypadki testowe}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Nazwa testu} & \textbf{Opis} \\
+\midrule
+\texttt{beach\_recommendation\_exists} & Sprawdza, czy dla scenariusza plażowego generowane są rekomendacje (lista niepusta). \\
+\texttt{barcelona\_should\_score\_for\_beach\_trip} & Weryfikuje, że Barcelona uzyskuje wynik $> 0$ dla wyjazdu plażowego. \\
+\texttt{fuzzy\_climate\_match\_scores\_partially} & Testuje, że Praga przy preferencji klimatu ciepłego uzyskuje dokładnie 11 pkt (częściowe dopasowanie rozmyte: $\text{round}(15 \times 0.7) = 11$). \\
+\texttt{minimal\_reducts\_preserve\_best} & Sprawdza, że redukt zachowuje tę~samą rekomendację i~wynik co pełny zbiór atrybutów. \\
+\texttt{used\_attributes\_are\_detected} & Weryfikuje poprawne wykrywanie użytych atrybutów. \\
+\bottomrule
+\end{tabularx}
+\caption{Przypadki testowe systemu}
+\end{table}
+
+\subsection{Przykład testu rozmytego}
+
+Test \texttt{fuzzy\_climate\_match\_scores\_partially} ilustruje działanie logiki rozmytej:
+
+\begin{lstlisting}[style=prolog, caption={Test częściowego dopasowania klimatu}]
+test(fuzzy_climate_match_scores_partially) :-
+    retractall(answer(_, _)),
+    assertz(answer(klimat, cieply)),
+    recommendation(praga, Score, _),
+    Score =:= 11.
+\end{lstlisting}
+
+Praga ma klimat \texttt{umiarkowany}. Przy preferencji \texttt{cieply} stopień podobieństwa wynosi $\mu = 0.7$, co daje $\text{round}(15 \times 0.7) = 11$ punktów.
+
+\section{Podsumowanie}
+
+Zaimplementowany system ekspertowy łączy trzy techniki sztucznej inteligencji w~spójnym narzędziu rekomendacyjnym:
+
+\begin{enumerate}
+    \item \textbf{Klasyczne wnioskowanie regułowe} -- reguły produkcji \texttt{preference\_point} łączą preferencje użytkownika z~cechami destynacji, umożliwiając agregację punktów i~generowanie rankingu.
+
+    \item \textbf{Logika rozmyta} -- funkcje podobieństwa (\texttt{type\_similarity}, \texttt{budget\_similarity}, \texttt{climate\_similarity}, \texttt{length\_similarity}, \texttt{activity\_similarity}) przyznają częściowe punkty za niepełne dopasowania, co pozwala na płynną ocenę zamiast binarnej klasyfikacji.
+
+    \item \textbf{Teoria zbiorów przybliżonych} -- algorytm minimalnych reduktów identyfikuje najmniejsze podzbiory atrybutów wystarczające do zachowania rekomendacji, co demonstruje, które preferencje użytkownika są rzeczywiście decydujące.
+\end{enumerate}
+
+System zawiera 13~destynacji, 7~atrybutów preferencji z~5~rozmytymi funkcjami podobieństwa, reguły specjalistyczne oraz dwa tryby redukcji atrybutów (ścisły i~tolerancyjny). Modułowa architektura ułatwia rozszerzanie bazy wiedzy o~nowe destynacje i~reguły bez modyfikacji mechanizmu wnioskowania.
+
+\end{document}

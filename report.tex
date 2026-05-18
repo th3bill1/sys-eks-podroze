@@ -1,0 +1,309 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage{comment}
+\usepackage[]{hypcap}
+\usepackage{chngcntr}
+\usepackage{float}
+\usepackage{ragged2e}
+
+\newcommand{\projecttitle}{System ekspertowy do wyboru destynacji podróżniczej}
+\newcommand{\authorone}{Aleksandra Wieczorek}
+\newcommand{\authortwo}{Wojciech Wójcik}
+\newcommand{\projectdate}{Warszawa, marzec 2026}
+
+
+\begin{document}
+\sloppy
+
+\begin{titlepage}
+    \centering
+
+    \includegraphics[width=0.8\textwidth]{politechnika.png}\par
+    \vspace{2.5cm}
+
+    {\Large Projekt z przedmiotu Systemy Ekspertowe\par}
+    \vspace{1.2cm}
+
+    {\Huge \bfseries \projecttitle \par}
+    \vspace{2cm}
+
+    {\Large Autorzy:\par}
+    \vspace{0.5cm}
+    {\large \authorone\par}
+    \vspace{0.3cm}
+    {\large \authortwo\par}
+
+    \vfill
+
+    {\large \projectdate\par}
+\end{titlepage}
+\tableofcontents
+\newpage
+
+\section{Wprowadzenie}
+
+Wybór miejsca podróży jest dla wielu osób procesem złożonym i wielokryterialnym. Decyzja ta zależy nie tylko od budżetu, terminu czy dostępnych środków transportu, ale również od indywidualnych preferencji, takich jak oczekiwany styl wypoczynku, poziom aktywności, potrzeba bezpieczeństwa czy zainteresowanie określonymi atrakcjami. W praktyce oznacza to konieczność uwzględnienia wielu czynników jednocześnie, które często wzajemnie na siebie wpływają.
+
+Współczesne serwisy turystyczne dostarczają dużej liczby informacji o kierunkach wyjazdów, jednak najczęściej wymagają samodzielnej analizy ofert i porównywania wielu parametrów. W rezultacie proces podejmowania decyzji może być czasochłonny i nieintuicyjny. System ekspertowy może stanowić wsparcie w tym procesie poprzez uporządkowanie wiedzy dziedzinowej oraz automatyczne generowanie rekomendacji na podstawie odpowiedzi udzielanych w trakcie konsultacji.
+
+Celem projektu jest opracowanie systemu ekspertowego wspomagającego wybór destynacji podróżniczej na podstawie preferencji, ograniczeń oraz oczekiwań użytkownika. System ma prowadzić kontekstowy dialog, gromadzić informacje dotyczące planowanego wyjazdu, a następnie na podstawie reguł zapisanych w bazie wiedzy wyznaczać najbardziej odpowiednie kierunki podróży.
+
+\section{Założenia projektowe}
+
+Projektowany system ekspertowy zostanie zrealizowany w języku Prolog. Przyjęto założenie, że system będzie miał budowę modułową, co ułatwi jego rozwój, testowanie oraz analizę działania.
+
+Podstawowym założeniem jest rozdzielenie bazy wiedzy, danych dziedzinowych, mechanizmu sterowania oraz interfejsu użytkownika. Wiedza o destynacjach i regułach decyzyjnych będzie zapisana w bazie wiedzy, natomiast logika dialogu i prezentacji wyników zostanie wydzielona do osobnych modułów.
+
+System będzie składał się z czterech głównych części: interfejsu użytkownika, bazy wiedzy, modułu znajdowania reguł minimalnych oraz modułu wnioskowania przybliżonego i rozmytego. Baza wiedzy będzie obejmowała około 100 reguł produkcji wykorzystywanych w procesie konsultacji.
+
+Istotnym założeniem jest kontekstowy charakter dialogu z użytkownikiem. Oznacza to, że kolejne pytania będą zależały od wcześniej udzielonych odpowiedzi, a system będzie mógł dochodzić do rekomendacji różnymi ścieżkami. Forma odpowiedzi użytkownika ma być dopasowana do treści pytania i może obejmować zarówno wybór jednokrotny, jak i wielokrotny.
+
+Końcowa rekomendacja nie będzie zapisana jako gotowy fakt, lecz będzie wynikiem procesu wnioskowania opartego na regułach oraz informacjach uzyskanych od użytkownika. Dzięki temu system zachowa charakter systemu ekspertowego i będzie mógł uzasadnić otrzymany wynik.
+
+\newpage
+\section{Cel systemu}
+
+Zadaniem systemu jest pomoc użytkownikowi w wyborze miejsca podróży odpowiadającego jego potrzebom. System będzie uwzględniał między innymi:
+\begin{itemize}
+    \item preferowany typ wypoczynku,
+    \item budżet podróży,
+    \item preferowany klimat,
+    \item długość wyjazdu,
+    \item środek transportu,
+    \item oczekiwany poziom aktywności,
+    \item bezpieczeństwo,
+    \item liczbę współpodróżujących osób,
+    \item preferencje dotyczące natury, miasta, zabytków lub rozrywki.
+\end{itemize}
+
+Końcowym wynikiem działania systemu będzie nie tylko wskazanie destynacji, ale też uzasadnie rekomendacji.  
+Wynik może mieć postać:
+jednej głównej rekomendacji,
+kilku alternatyw,
+stopnia dopasowania oraz
+krótkiego wyjaśnienia, które przesłanki zadecydowały
+
+\section{Charakterystyka problemu}
+
+Wybór destynacji podróżniczej jest problemem złożonym, ponieważ zależy od wielu czynników, które mogą mieć zarówno charakter obiektywny, jak i subiektywny. Różni użytkownicy mogą preferować odmienne style podróżowania, na przykład wypoczynek plażowy, zwiedzanie miast, kontakt z naturą, aktywność sportową lub podróże budżetowe. Dodatkowo niektóre preferencje są nieostre i trudno je opisać wyłącznie w sposób zero-jedynkowy, co uzasadnia wykorzystanie elementów wnioskowania rozmytego.
+
+Problem ten dobrze nadaje się do modelowania w systemie ekspertowym, ponieważ:
+\begin{itemize}
+    \item możliwe jest sformułowanie licznych reguł produkcji opisujących zależności między cechami podróży a destynacjami,
+    \item dialog z użytkownikiem może być kontekstowy i zależny od wcześniej uzyskanych odpowiedzi,
+    \item możliwe jest zastosowanie zarówno klasycznego wnioskowania regułowego, jak i wnioskowania przybliżonego oraz rozmytego,
+    \item wyniki mogą być prezentowane w postaci rekomendacji o różnym stopniu dopasowania.
+\end{itemize}
+
+\section{Zakres wiedzy dziedzinowej}
+
+Baza wiedzy systemu będzie zawierała informacje o destynacjach oraz ich cechach istotnych z punktu widzenia użytkownika. Przykładowe obszary wiedzy obejmują:
+\begin{itemize}
+    \item klimat i sezonowość,
+    \item koszt podróży i pobytu,
+    \item dostępność atrakcji turystycznych,
+    \item charakter wypoczynku,
+    \item bezpieczeństwo,
+    \item odpowiedniość dla rodzin, par, grup znajomych lub osób podróżujących samotnie,
+    \item dostępność połączeń transportowych,
+    \item stopień zatłoczenia,
+    \item możliwości aktywnego wypoczynku.
+\end{itemize}
+
+W systemie będą reprezentowane zarówno fakty opisujące właściwości destynacji, jak i reguły wyprowadzające rekomendacje na podstawie preferencji użytkownika.
+
+\section{Przykładowe atrybuty i wartości}
+
+W systemie planuje się wykorzystanie następujących grup atrybutów:
+
+\subsection{Atrybuty dotyczące preferencji użytkownika}
+\begin{itemize}
+    \item \texttt{typ\_wypoczynku}: plażowy, miejski, górski, aktywny, kulturowy, relaksacyjny,
+    \item \texttt{budzet}: niski, średni, wysoki,
+    \item \texttt{klimat}: ciepły, umiarkowany, chłodny,
+    \item \texttt{srodek\_transportu}: samolot, samochód, pociąg, dowolny,
+    \item \texttt{dlugosc\_wyjazdu}: weekend, kilka\_dni, tydzien, dlugi\_pobyt,
+    \item \texttt{towarzystwo}: solo, para, rodzina, znajomi,
+    \item \texttt{poziom\_aktywnosci}: niski, średni, wysoki.
+\end{itemize}
+
+\subsection{Atrybuty opisujące destynacje}
+\begin{itemize}
+    \item \texttt{ma\_plaze},
+    \item \texttt{ma\_zabytki},
+    \item \texttt{ma\_gory},
+    \item \texttt{dobry\_na\_weekend},
+    \item \texttt{bezpieczny},
+    \item \texttt{tani},
+    \item \texttt{odpowiedni\_dla\_rodzin},
+    \item \texttt{dobra\_komunikacja},
+    \item \texttt{wysoka\_temperatura\_latem}.
+\end{itemize}
+
+\section{Przykładowe reguły}
+
+W systemie zostaną zdefiniowane reguły produkcji łączące preferencje użytkownika z właściwościami destynacji. Poniżej przedstawiono siedem przykładowych reguł opartych na wcześniej zdefiniowanych atrybutach.
+
+\begin{itemize}
+    \item Jeżeli \texttt{typ\_wypoczynku = plazowy}, \texttt{klimat = cieply} i \texttt{budzet = wysoki}, to należy preferować destynacje o cechach \texttt{ma\_plaze} oraz \texttt{wysoka\_temperatura\_latem}.
+
+    \item Jeżeli \texttt{typ\_wypoczynku = miejski}, \texttt{dlugosc\_wyjazdu = weekend} i \texttt{srodek\_transportu = pociag}, to należy preferować destynacje o cechach \texttt{dobry\_na\_weekend} oraz \texttt{dobra\_komunikacja}.
+
+    \item Jeżeli \texttt{typ\_wypoczynku = kulturowy} i destynacja ma cechę \texttt{ma\_zabytki}, to powinna otrzymać wyższy priorytet w rekomendacji.
+
+    \item Jeżeli \texttt{typ\_wypoczynku = gorski}, \texttt{poziom\_aktywnosci = wysoki} i destynacja ma cechę \texttt{ma\_gory}, to powinna zostać uznana za dobrze dopasowaną.
+
+    \item Jeżeli \texttt{towarzystwo = rodzina}, \texttt{budzet = sredni} i destynacja jest \texttt{odpowiedni\_dla\_rodzin}, to powinna zostać zakwalifikowana do rekomendacji.
+
+    \item Jeżeli \texttt{towarzystwo = solo}, \texttt{typ\_wypoczynku = miejski} oraz destynacja jest \texttt{bezpieczny} i ma cechę \texttt{dobra\_komunikacja}, to może zostać uznana za odpowiednią dla podróży indywidualnej.
+
+    \item Jeżeli \texttt{budzet = niski} i destynacja jest \texttt{tani}, to powinna być preferowana względem droższych alternatyw.
+\end{itemize}
+
+Przedstawione reguły mają charakter przykładowy i pokazują sposób powiązania odpowiedzi użytkownika z właściwościami destynacji. W docelowej wersji systemu liczba reguł będzie większa, tak aby możliwe było uzyskiwanie rekomendacji różnymi ścieżkami wnioskowania.
+
+\section{Redukty i ich zastosowanie w projekcie}
+
+W kontekście systemów opartych na regułach oraz metod odkrywania wiedzy istotnym pojęciem są \textbf{redukty} (ang. \textit{reducts}). Redukt można rozumieć jako \textbf{minimalny zbiór atrybutów}, który zachowuje zdolność do podejmowania tej samej decyzji co pełny zbiór cech. Oznacza to, że część informacji może być nadmiarowa, a poprawna rekomendacja może zostać wyznaczona również na podstawie mniejszej liczby odpowiednio dobranych cech.
+
+W praktyce redukty służą do:
+\begin{itemize}
+    \item usuwania atrybutów zbędnych lub powtarzających podobną informację,
+    \item upraszczania reguł decyzyjnych,
+    \item ograniczania liczby pytań zadawanych użytkownikowi,
+    \item przyspieszenia procesu wnioskowania,
+    \item zwiększenia przejrzystości uzasadnienia końcowej rekomendacji.
+\end{itemize}
+
+W projektowanym systemie ekspertowym pojęcie reduktu będzie wykorzystywane do wyznaczania \textbf{minimalnych zestawów informacji potrzebnych do wskazania odpowiedniej destynacji podróżniczej}. Oznacza to, że system nie zawsze będzie musiał zadawać wszystkie możliwe pytania. Jeżeli dla uzyskania wiarygodnej rekomendacji wystarczy określony podzbiór odpowiedzi użytkownika, pozostałe pytania mogą zostać pominięte.
+
+Przykładowo, dla części rekomendacji może się okazać, że kluczowe znaczenie mają jedynie takie cechy jak:
+\begin{itemize}
+    \item typ wypoczynku,
+    \item budżet,
+    \item długość wyjazdu,
+    \item preferowany środek transportu.
+\end{itemize}
+
+Jeżeli na podstawie tych atrybutów system potrafi jednoznacznie zawęzić zbiór możliwych destynacji, to pozostałe informacje, na przykład dotyczące poziomu aktywności lub stopnia zatłoczenia, nie będą konieczne w danym przebiegu konsultacji. Taki minimalny zestaw cech będzie właśnie przykładem reduktu.
+
+W naszym projekcie redukty będą wykorzystywane przede wszystkim w dwóch obszarach:
+\begin{enumerate}
+    \item \textbf{Optymalizacja dialogu z użytkownikiem} \\
+    System będzie dążył do zadawania jedynie tych pytań, które są rzeczywiście potrzebne do osiągnięcia rekomendacji. Dzięki temu konsultacja stanie się krótsza i bardziej naturalna.
+
+    \item \textbf{Wyznaczanie reguł minimalnych} \\
+    Na podstawie analizy atrybutów system będzie wskazywał minimalne zestawy przesłanek prowadzących do określonego wniosku. Pozwoli to uprościć bazę wiedzy i lepiej uzasadniać, dlaczego dana destynacja została zaproponowana.
+\end{enumerate}
+
+Zastosowanie reduktów jest szczególnie istotne w systemie rekomendacyjnym, ponieważ preferencje użytkownika mogą być liczne i częściowo nakładające się. Dzięki analizie reduktów możliwe będzie wykrycie, które informacje są naprawdę decydujące, a które mają jedynie charakter pomocniczy. W efekcie system stanie się bardziej efektywny, bardziej zrozumiały dla użytkownika oraz łatwiejszy do dalszego rozwijania.
+
+W dalszej implementacji moduł odpowiedzialny za znajdowanie reguł minimalnych będzie analizował zależności między odpowiedziami użytkownika a końcowymi rekomendacjami, tak aby wskazać najmniejsze zbiory warunków wystarczające do podjęcia decyzji. Pozwoli to połączyć klasyczne reguły produkcji z bardziej ekonomicznym i inteligentnym sterowaniem procesem konsultacji.
+
+\vspace{2cm}
+\section{Algorytm znajdowania minimalnych reguł wyboru}
+
+Minimalna reguła wyboru to taka reguła, która prowadzi do tej samej decyzji co reguła pierwotna, ale nie zawiera żadnych zbędnych warunków. Oznacza to, że usunięcie dowolnego warunku z reguły minimalnej powoduje zmianę decyzji, brak decyzji albo pojawienie się niejednoznaczności.
+
+W projekcie reguła będzie reprezentowana w postaci:
+
+\begin{center}
+\texttt{regula(Id, [Warunek1, Warunek2, ..., WarunekN], Decyzja)}
+\end{center}
+
+Algorytm dla każdej reguły z bazy wiedzy wykonuje następujące kroki:
+
+\begin{enumerate}
+    \item Pobierz regułę \texttt{R} w postaci listy warunków \texttt{W} oraz decyzji \texttt{D}.
+    \item Wygeneruj wszystkie niepuste podzbiory listy warunków \texttt{W}.
+    \item Posortuj podzbiory rosnąco według liczby warunków.
+    \item Dla każdego podzbioru \texttt{P} sprawdź, czy:
+    \begin{itemize}
+        \item podzbiór \texttt{P} prowadzi do decyzji \texttt{D},
+        \item podzbiór \texttt{P} nie prowadzi do żadnej innej decyzji,
+        \item żaden właściwy podzbiór \texttt{P} nie spełnia dwóch powyższych warunków.
+    \end{itemize}
+    \item Jeżeli wszystkie warunki są spełnione, zapisz \texttt{P} jako minimalną regułę wyboru dla decyzji \texttt{D}.
+    \item Powtórz procedurę dla wszystkich reguł w bazie wiedzy.
+\end{enumerate}
+
+\newpage
+Schemat algorytmu:
+
+\begin{verbatim}
+minimalne_reguly = []
+
+dla każdej reguły R:
+    W = warunki reguły R
+    D = decyzja reguły R
+
+    kandydaci = wszystkie niepuste podzbiory W
+    kandydaci = sortuj_rosnaco_po_liczbie_warunkow(kandydaci)
+
+    dla każdego P w kandydaci:
+        jeżeli decyzje(P) = [D]:
+            jeżeli nie istnieje P_min w minimalne_reguly,
+               takie że P_min jest podzbiorem P
+               oraz decyzja(P_min) = D:
+                    dodaj P -> D do minimalne_reguly
+\end{verbatim}
+
+Przykład:
+
+\begin{center}
+\texttt{regula(r1, [typ=plazowy, klimat=cieply, budzet=wysoki], morze)}
+\end{center}
+
+Jeżeli system sprawdzi, że:
+
+\begin{center}
+\texttt{[typ=plazowy, klimat=cieply] -> morze}
+\end{center}
+
+oraz żaden z podzbiorów jednoelementowych nie wystarcza do jednoznacznego wyboru decyzji \texttt{morze}, to minimalna reguła ma postać:
+
+\begin{center}
+\texttt{regula\_minimalna(r1, [typ=plazowy, klimat=cieply], morze)}
+\end{center}
+
+\section{Architektura systemu}
+
+Projekt zostanie podzielony na cztery główne komponenty:
+
+\begin{enumerate}[label=\arabic*.]
+    \item \textbf{Interfejs użytkownika} \\
+    Odpowiada za prowadzenie dialogu z użytkownikiem, zadawanie pytań oraz prezentację wyników końcowych.
+
+    \item \textbf{Baza wiedzy i danych dziedzinowych} \\
+    Zawiera fakty opisujące destynacje oraz reguły produkcji wykorzystywane w procesie wnioskowania.
+
+    \item \textbf{Moduł znajdowania reguł minimalnych} \\
+    Odpowiada za identyfikację minimalnych zestawów atrybutów potrzebnych do uzyskania określonych wniosków oraz za prezentację minimalnych reguł.
+
+    \item \textbf{Moduł wnioskowania rozmytego i przybliżonego} \\
+    Rozszerza klasyczne wnioskowanie o obsługę nieostrych pojęć, takich jak niski budżet, wysoka atrakcyjność czy umiarkowany poziom aktywności.
+\end{enumerate}
+
+
+
+\section{Podsumowanie}
+
+Przedstawiony projekt dotyczy opracowania systemu ekspertowego wspomagającego wybór destynacji podróżniczej na podstawie preferencji i oczekiwań użytkownika. System będzie wykorzystywał bazę wiedzy, reguły produkcji oraz mechanizmy wnioskowania do generowania rekomendacji najlepiej dopasowanych do zadanych kryteriów.
+
+Przyjęta architektura modułowa oraz rozdzielenie bazy wiedzy, interfejsu użytkownika i mechanizmów wnioskowania mają zapewnić przejrzystość, możliwość rozwoju oraz poprawność działania systemu. Zastosowanie elementów wnioskowania przybliżonego i rozmytego pozwoli dodatkowo uwzględnić nieostry charakter części preferencji użytkownika.
+
+Opracowany system ma stanowić przykład praktycznego zastosowania metod sztucznej inteligencji i systemów ekspertowych w problemie wspomagania decyzji dotyczących planowania podróży.
+
+\end{document}
